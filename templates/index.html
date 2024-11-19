@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Show Buzzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #800000;  /* Maroon base */
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Stage curtain effect */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                rgba(80,0,0,1) 0%,
+                rgba(128,0,0,1) 40%,
+                rgba(160,0,0,1) 100%);
+            z-index: -1;
+        }
+
+        body::before {
+            left: 0;
+            transform-origin: left top;
+        }
+
+        body::after {
+            right: 0;
+            transform-origin: right top;
+            transform: scaleX(-1);
+        }
+
+        /* Stage lights effect */
+        .stage-light {
+            position: fixed;
+            width: 150px;
+            height: 75px;
+            background: radial-gradient(ellipse at center, 
+                rgba(255,255,190,0.4) 0%,
+                rgba(255,255,190,0) 70%);
+            animation: lightMove 4s infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes lightMove {
+            0% { transform: translateX(-50px) scale(1); opacity: 0.3; }
+            100% { transform: translateX(50px) scale(1.5); opacity: 0.6; }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(0,0,0,0.4);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 3em;
+            margin-bottom: 2rem;
+            color: #FFD700;
+            text-shadow: 
+                0 0 10px rgba(255,215,0,0.5),
+                0 0 20px rgba(255,215,0,0.3),
+                0 0 30px rgba(255,215,0,0.2);
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 10px rgba(255,215,0,0.5), 0 0 20px rgba(255,215,0,0.3), 0 0 30px rgba(255,215,0,0.2); }
+            to { text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 30px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.4); }
+        }
+
+        #tableSelect {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #FFD700;
+            color: #FFD700;
+            padding: 0.5rem;
+            font-size: 1.2em;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            width: 200px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #tableSelect:hover {
+            background: rgba(255,215,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        #tableSelect option {
+            background: #800000;
+            color: #FFD700;
+        }
+
+        .buzzer-container {
+            position: relative;
+            margin: 2rem auto;
+            width: 300px;
+            height: 300px;
+        }
+
+        #buzzerButton {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: none;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+            color: #800000;
+            font-size: 2.5em;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.3),
+                0 0 30px rgba(255,215,0,0.5),
+                inset 0 -10px 20px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+        }
+
+        #buzzerButton:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 15px 30px rgba(0,0,0,0.4),
+                0 0 50px rgba(255,215,0,0.6),
+                inset 0 -10px 20px rgba(0,0,0,0.2);
+        }
+
+        #buzzerButton:active {
+            transform: translateY(5px) scale(0.98);
+            box-shadow: 
+                0 5px 10px rgba(0,0,0,0.2),
+                0 0 20px rgba(255,215,0,0.4),
+                inset 0 -5px 10px rgba(0,0,0,0.2);
+        }
+
+        .buzzer-container.disabled #buzzerButton {
+            background: #808080;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 
+                0 5px 10px rgba(0,0,0,0.2),
+                inset 0 -5px 10px rgba(0,0,0,0.2);
+        }
+
+        #status {
+            margin-top: 2rem;
+            font-size: 1.5em;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.3);
+            min-height: 40px;
+        }
+
+        .position-highlight {
+            font-size: 3em;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            animation: positionPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes positionPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .ranking-section {
+            background: rgba(0,0,0,0.6);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255,215,0,0.2);
+            text-align: center;
+        }
+
+        .ranking-title {
+            color: #FFD700;
+            font-size: 1.5em;
+            margin-bottom: 1rem;
+        }
+
+        .points-display {
+            font-size: 2em;
+            color: #FFD700;
+            margin: 1rem 0;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .current-rank {
+            font-size: 1.2em;
+            color: #fff;
+            margin-top: 0.5rem;
+        }
+
+        .medal {
+            font-size: 2em;
+            margin: 0.5rem;
+        }
+
+        .gold { color: #FFD700; }
+        .silver { color: #C0C0C0; }
+        .bronze { color: #CD7F32; }
+
+        .points-awarded {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 1rem;
+            animation: pointsPulse 0.5s ease-in-out;
+        }
+
+        @keyframes pointsPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Stage lights -->
+    <div class="stage-light" style="top: 10%; left: 10%;"></div>
+    <div class="stage-light" style="top: 20%; left: 30%;"></div>
+    <div class="stage-light" style="top: 15%; left: 50%;"></div>
+    <div class="stage-light" style="top: 25%; left: 70%;"></div>
+    <div class="stage-light" style="top: 5%; left: 90%;"></div>
+
+    <div class="container">
+        <h1 class="title">Game Show Buzzer</h1>
+        
+        <select id="tableSelect" required>
+            <option value="" disabled selected>Select Table</option>
+        </select>
+
+        <div class="buzzer-container" id="buzzerContainer">
+            <button id="buzzerButton">BUZZ!</button>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="ranking-section">
+            <h2 class="ranking-title">Your Score</h2>
+            <div class="points-display">0 Points</div>
+            <div class="current-rank">
+                <span class="medal"></span>
+                <span class="rank-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const buzzerButton = document.getElementById('buzzerButton');
+        const tableSelect = document.getElementById('tableSelect');
+        const statusDisplay = document.getElementById('status');
+        const buzzerContainer = document.getElementById('buzzerContainer');
+        let hasBuzzed = false;
+        let selectedTable = '';
+
+        // Create table options
+        for (let i = 1; i <= 11; i++) {
+            const option = document.createElement('option');
+            option.value = String(i);
+            option.textContent = `Table ${i}`;
+            tableSelect.appendChild(option);
+        }
+
+        // Update display with rankings
+        function updateDisplay(rankings) {
+            if (!selectedTable) return;
+            
+            const pointsDisplay = document.querySelector('.points-display');
+            const rankText = document.querySelector('.rank-text');
+            const medal = document.querySelector('.medal');
+            
+            // Find current table in rankings
+            const tableRank = rankings.findIndex(r => r.table === selectedTable) + 1;
+            const tablePoints = rankings.find(r => r.table === selectedTable)?.points || 0;
+            
+            pointsDisplay.textContent = `${tablePoints} Points`;
+            if (tableRank > 0) {
+                rankText.textContent = `Rank #${tableRank}`;
+                
+                if (tableRank === 1) {
+                    medal.textContent = '🥇';
+                    medal.className = 'medal gold';
+                } else if (tableRank === 2) {
+                    medal.textContent = '🥈';
+                    medal.className = 'medal silver';
+                } else if (tableRank === 3) {
+                    medal.textContent = '🥉';
+                    medal.className = 'medal bronze';
+                } else {
+                    medal.textContent = '';
+                    medal.className = 'medal';
+                }
+            } else {
+                rankText.textContent = '';
+                medal.textContent = '';
+                medal.className = 'medal';
+            }
+        }
+
+        // Create buzzer animation
+        function playBuzzerAnimation() {
+            buzzerButton.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                buzzerButton.style.transform = '';
+            }, 200);
+        }
+
+        // Disable buzzer initially
+        buzzerContainer.classList.add('disabled');
+        buzzerButton.disabled = true;
+
+        // Enable buzzer when table is selected
+        tableSelect.addEventListener('change', () => {
+            selectedTable = tableSelect.value;
+            if (selectedTable) {
+                buzzerContainer.classList.remove('disabled');
+                buzzerButton.disabled = false;
+                statusDisplay.textContent = 'Ready to buzz!';
+                
+                // Reset points display
+                const pointsDisplay = document.querySelector('.points-display');
+                const rankText = document.querySelector('.rank-text');
+                const medal = document.querySelector('.medal');
+                
+                pointsDisplay.textContent = '0 Points';
+                rankText.textContent = '';
+                medal.textContent = '';
+            } else {
+                buzzerContainer.classList.add('disabled');
+                buzzerButton.disabled = true;
+                statusDisplay.textContent = 'Select your table number to begin!';
+            }
+        });
+
+        // Handle buzz button click
+        buzzerButton.addEventListener('click', () => {
+            if (!hasBuzzed && selectedTable) {
+                socket.emit('buzz', { table_id: selectedTable });
+                playBuzzerAnimation();
+                hasBuzzed = true;
+                buzzerContainer.classList.add('disabled');
+                buzzerButton.disabled = true;
+                statusDisplay.textContent = 'Buzzed in! Waiting for results...';
+            }
+        });
+
+        // Handle buzz order received
+        socket.on('buzz_received', (data) => {
+            if (data.table_id === selectedTable) {
+                buzzerContainer.classList.add('disabled');
+                buzzerButton.disabled = true;
+                
+                const status = document.getElementById('status');
+                status.innerHTML = `<div class="position-highlight">Position #${data.order}</div>`;
+            }
+        });
+
+        // Handle initial rankings
+        socket.on('rankings_update', (data) => {
+            updateDisplay(data.rankings);
+        });
+
+        // Handle points updates
+        socket.on('points_updated', (data) => {
+            updateDisplay(data.rankings);
+            
+            if (data.table_id === selectedTable) {
+                // Show points awarded notification
+                const status = document.getElementById('status');
+                status.innerHTML += `<div class="points-awarded">+${data.points_awarded} Points!</div>`;
+            }
+        });
+
+        // Handle reset
+        socket.on('buzzers_reset', () => {
+            hasBuzzed = false;
+            if (selectedTable) {
+                buzzerContainer.classList.remove('disabled');
+                buzzerButton.disabled = false;
+                document.getElementById('status').textContent = 'Ready to buzz!';
+            }
+        });
+
+        // Handle points reset
+        socket.on('points_reset', () => {
+            const pointsDisplay = document.querySelector('.points-display');
+            const rankText = document.querySelector('.rank-text');
+            const medal = document.querySelector('.medal');
+            
+            pointsDisplay.textContent = '0 Points';
+            rankText.textContent = '';
+            medal.textContent = '';
+        });
+
+        // Handle socket connection events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            statusDisplay.textContent = 'Disconnected from server...';
+            buzzerContainer.classList.add('disabled');
+            buzzerButton.disabled = true;
+        });
+    </script>
+</body>
+</html>

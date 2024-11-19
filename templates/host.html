@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Show Host Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #800000;  /* Maroon base */
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Stage curtain effect */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                rgba(80,0,0,1) 0%,
+                rgba(128,0,0,1) 40%,
+                rgba(160,0,0,1) 100%);
+            z-index: -1;
+        }
+
+        body::before {
+            left: 0;
+            transform-origin: left top;
+        }
+
+        body::after {
+            right: 0;
+            transform-origin: right top;
+            transform: scaleX(-1);
+        }
+
+        /* Stage lights effect */
+        .stage-light {
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            background: radial-gradient(ellipse at center, 
+                rgba(255,255,190,0.4) 0%,
+                rgba(255,255,190,0) 70%);
+            animation: lightMove 4s infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes lightMove {
+            0% { transform: translateX(-50px) scale(1); opacity: 0.3; }
+            100% { transform: translateX(50px) scale(1.5); opacity: 0.6; }
+        }
+
+        .host-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(0,0,0,0.4);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 2rem;
+            color: #FFD700;
+            text-shadow: 
+                0 0 10px rgba(255,215,0,0.5),
+                0 0 20px rgba(255,215,0,0.3),
+                0 0 30px rgba(255,215,0,0.2);
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 10px rgba(255,215,0,0.5), 0 0 20px rgba(255,215,0,0.3), 0 0 30px rgba(255,215,0,0.2); }
+            to { text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 30px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.4); }
+        }
+
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .table-card {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 1rem;
+            margin: 0.5rem;
+            text-align: center;
+            border: 2px solid rgba(255, 215, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            width: 200px;
+        }
+
+        .table-card.buzzed {
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            animation: firstBuzzerGlow 1s ease-in-out infinite alternate;
+        }
+
+        .points-controls {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .table-card.buzzed .points-controls {
+            display: block;
+        }
+
+        .points-input {
+            width: 60px;
+            padding: 0.3rem;
+            margin: 0.5rem;
+            border: 2px solid #FFD700;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #FFD700;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .award-points {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .award-points:hover {
+            background: #FFC500;
+            transform: scale(1.05);
+        }
+
+        .award-points:active {
+            transform: scale(0.95);
+        }
+
+        .award-points.awarded {
+            background: #28a745;
+            cursor: not-allowed;
+        }
+
+        .points-message {
+            margin-top: 0.5rem;
+            color: #28a745;
+            font-weight: bold;
+            display: none;
+        }
+
+        .table-number {
+            font-size: 1.5em;
+            color: #FFD700;
+            margin-bottom: 0.5rem;
+        }
+
+        .buzz-order {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+            margin: 1rem 0;
+        }
+
+        .buzz-time {
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .control-panel {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+
+        .reset-button {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.2em;
+            border-radius: 50px;
+            color: #800000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,215,0,0.4);
+        }
+
+        .reset-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(255,215,0,0.2);
+        }
+
+        /* First buzzer highlight */
+        .table-card:first-child.buzzed {
+            background: rgba(255,215,0,0.3);
+            animation: firstBuzzerGlow 2s infinite alternate;
+        }
+
+        @keyframes firstBuzzerGlow {
+            from { box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+            to { box-shadow: 0 0 40px rgba(255,215,0,0.6); }
+        }
+
+        .ranking-section {
+            background: rgba(0,0,0,0.6);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+
+        .ranking-title {
+            color: #FFD700;
+            font-size: 1.8em;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .ranking-table {
+            width: 100%;
+            color: #fff;
+        }
+
+        .ranking-table th,
+        .ranking-table td {
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .ranking-table tr:nth-child(1) td {
+            color: #FFD700; /* Gold */
+            font-size: 1.2em;
+        }
+
+        .ranking-table tr:nth-child(2) td {
+            color: #C0C0C0; /* Silver */
+        }
+
+        .ranking-table tr:nth-child(3) td {
+            color: #CD7F32; /* Bronze */
+        }
+
+        #audioContextMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px solid #FFD700;
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+
+        #audioContextMessage.show {
+            display: block;
+        }
+
+        #startAudioButton {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: #800000;
+            font-weight: bold;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #startAudioButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.3);
+        }
+
+        .answer-controls {
+            margin-top: 1rem;
+        }
+
+        .check-answer {
+            padding: 0.5rem 1rem;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .check-answer:hover {
+            background: #357abd;
+            transform: scale(1.05);
+        }
+
+        .check-answer:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <!-- Stage lights -->
+    <div class="stage-light" style="top: 10%; left: 10%;"></div>
+    <div class="stage-light" style="top: 20%; left: 30%;"></div>
+    <div class="stage-light" style="top: 15%; left: 50%;"></div>
+    <div class="stage-light" style="top: 25%; left: 70%;"></div>
+    <div class="stage-light" style="top: 5%; left: 90%;"></div>
+
+    <div class="host-container">
+        <h1 class="title">Game Show Host Panel</h1>
+        
+        <div class="tables-grid" id="tablesGrid">
+            <!-- Table cards will be inserted here -->
+        </div>
+
+        <div class="ranking-section">
+            <h2 class="ranking-title">Live Rankings</h2>
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Table</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody id="rankingsBody">
+                    <!-- Rankings will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="control-panel">
+            <button class="reset-button" onclick="resetBuzzers()">RESET BUZZERS</button>
+            <button class="reset-button" onclick="resetPoints()" style="margin-left: 1rem;">RESET POINTS</button>
+        </div>
+    </div>
+
+    <div id="audioContextMessage">
+        <h3>Enable Sound</h3>
+        <p>Click the button below to enable sound effects</p>
+        <button id="startAudioButton">Enable Sound</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const tablesGrid = document.getElementById('tablesGrid');
+        const resetButton = document.getElementById('resetButton');
+        const tableStates = {};
+        const audioContextMessage = document.getElementById('audioContextMessage');
+        const startAudioButton = document.getElementById('startAudioButton');
+        let audioContext = null;
+
+        // Initialize Web Audio API
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+                audioContextMessage.classList.add('show');
+            }
+        }
+
+        // Start audio context on user interaction
+        startAudioButton.addEventListener('click', () => {
+            if (audioContext) {
+                audioContext.resume();
+                audioContextMessage.classList.remove('show');
+            }
+        });
+
+        // Create buzzer sound
+        function playBuzzerSound() {
+            if (!audioContext) return;
+
+            const oscillator1 = audioContext.createOscillator();
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator1.type = 'square';
+            oscillator2.type = 'square';
+            oscillator1.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator2.frequency.setValueAtTime(480, audioContext.currentTime);
+
+            oscillator1.connect(gainNode);
+            oscillator2.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator1.start();
+            oscillator2.start();
+            oscillator1.stop(audioContext.currentTime + 0.5);
+            oscillator2.stop(audioContext.currentTime + 0.5);
+        }
+
+        // Initialize audio on page load
+        document.addEventListener('DOMContentLoaded', initAudio);
+
+        // Create table cards
+        for (let i = 1; i <= 11; i++) {
+            const tableCard = document.createElement('div');
+            tableCard.className = 'table-card';
+            tableCard.dataset.table = i;
+            tableCard.innerHTML = `
+                <h2>Table ${i}</h2>
+                <div class="buzz-order"></div>
+                <div class="answer-controls" style="display: none;">
+                    <button class="check-answer" onclick="showPointsControls(${i})">Check Answer</button>
+                </div>
+                <div class="points-controls" style="display: none;">
+                    <input type="number" class="points-input" min="0" max="10" value="1">
+                    <button class="award-points" onclick="awardPoints(${i})">Award Points</button>
+                    <div class="points-message"></div>
+                </div>
+            `;
+            tablesGrid.appendChild(tableCard);
+            tableStates[i] = { buzzed: false, order: null, time: null };
+        }
+
+        // Handle buzz events
+        socket.on('buzz_received', (data) => {
+            const tableCard = document.querySelector(`[data-table="${data.table_id}"]`);
+            if (tableCard) {
+                tableCard.classList.add('buzzed');
+                const orderDisplay = tableCard.querySelector('.buzz-order');
+                orderDisplay.textContent = `#${data.order}`;
+                
+                // Show the "Check Answer" button
+                const answerControls = tableCard.querySelector('.answer-controls');
+                answerControls.style.display = 'block';
+                
+                // Update rankings
+                updateRankings(data.rankings);
+            }
+            playBuzzerSound();
+            reorderCards();
+        });
+
+        socket.on('points_updated', (data) => {
+            // Update the award button state
+            const tableCard = document.querySelector(`[data-table="${data.table_id}"]`);
+            if (tableCard) {
+                const pointsMessage = tableCard.querySelector('.points-message');
+                pointsMessage.textContent = `Awarded ${data.points_awarded} Points!`;
+                pointsMessage.style.display = 'block';
+            }
+            
+            // Update rankings
+            updateRankings(data.rankings);
+        });
+
+        socket.on('buzzers_reset', () => {
+            const tableCards = document.querySelectorAll('.table-card');
+            tableCards.forEach(card => {
+                card.classList.remove('buzzed');
+                card.querySelector('.buzz-order').textContent = '';
+                
+                // Hide all controls
+                card.querySelector('.answer-controls').style.display = 'none';
+                card.querySelector('.points-controls').style.display = 'none';
+                
+                // Reset points input
+                const pointsInput = card.querySelector('.points-input');
+                if (pointsInput) pointsInput.value = 1;
+                
+                // Clear points message
+                const pointsMessage = card.querySelector('.points-message');
+                pointsMessage.style.display = 'none';
+            });
+        });
+
+        // Reset buzzers
+        function resetBuzzers() {
+            socket.emit('reset_buzzers');
+            document.querySelectorAll('.table-card').forEach(card => {
+                card.classList.remove('buzzed');
+                card.querySelector('.buzz-order').textContent = '';
+                card.querySelector('.buzz-time').textContent = '';
+            });
+            Object.keys(tableStates).forEach(key => {
+                tableStates[key] = { buzzed: false, order: null, time: null };
+            });
+        }
+
+        // Reset points
+        function resetPoints() {
+            socket.emit('reset_points');
+            const rankingsBody = document.getElementById('rankingsBody');
+            rankingsBody.innerHTML = '';
+        }
+
+        // Function to reorder cards based on buzz order
+        function reorderCards() {
+            const cards = Array.from(tablesGrid.children);
+            cards.sort((a, b) => {
+                const aOrder = tableStates[a.dataset.table].order || Infinity;
+                const bOrder = tableStates[b.dataset.table].order || Infinity;
+                return aOrder - bOrder;
+            });
+            
+            cards.forEach(card => tablesGrid.appendChild(card));
+        }
+
+        // Update rankings
+        function updateRankings(rankings) {
+            const rankingsBody = document.getElementById('rankingsBody');
+            rankingsBody.innerHTML = '';
+            
+            rankings.forEach((rank, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>Table ${rank.table}</td>
+                    <td>${rank.points}</td>
+                `;
+                rankingsBody.appendChild(tr);
+            });
+        }
+
+        // Show points controls
+        function showPointsControls(tableId) {
+            const tableCard = document.querySelector(`[data-table="${tableId}"]`);
+            const answerControls = tableCard.querySelector('.answer-controls');
+            const pointsControls = tableCard.querySelector('.points-controls');
+            
+            // Hide answer check button and show points controls
+            answerControls.style.display = 'none';
+            pointsControls.style.display = 'block';
+        }
+
+        // Award points to a table
+        function awardPoints(tableId) {
+            const tableCard = document.querySelector(`[data-table="${tableId}"]`);
+            const pointsInput = tableCard.querySelector('.points-input');
+            const points = parseInt(pointsInput.value) || 0;
+            
+            socket.emit('award_points', { 
+                table_id: tableId,
+                points: points
+            });
+            
+            // Show awarded message and hide points controls
+            const pointsMessage = tableCard.querySelector('.points-message');
+            const pointsControls = tableCard.querySelector('.points-controls');
+            pointsMessage.textContent = `Awarded ${points} Points!`;
+            pointsMessage.style.display = 'block';
+            pointsControls.style.display = 'none';
+        }
+
+        // Handle socket connection events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+    </script>
+</body>
+</html>
